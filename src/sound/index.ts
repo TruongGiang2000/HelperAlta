@@ -7,7 +7,6 @@ import axios from 'axios';
 import md5 from 'md5';
 const {fs} = RNFetchBlob;
 let preVolume: number = -1;
-let interval: any;
 let _stopSoundApi: any;
 export const stopSoundApi = () => _stopSoundApi && _stopSoundApi();
 let fileArr: any[] = [];
