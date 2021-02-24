@@ -1,0 +1,129 @@
+import {pathLocal, downloadFile} from '../downFile';
+import Sound from 'react-native-sound';
+import RNFetchBlob from 'rn-fetch-blob';
+import BackgroundTimer from 'react-native-background-timer';
+import lodash from 'lodash';
+import axios from 'axios';
+import md5 from 'md5';
+const {fs} = RNFetchBlob;
+let preVolume: number = -1;
+let interval: any;
+let _stopSoundApi: any;
+export const stopSoundApi = () => _stopSoundApi && _stopSoundApi();
+const pathUrl = 'https://sanbot.dev-altamedia.com/';
+export const cacheFile = async (file: string, name?: string) => {
+  let filePlay: string = file;
+  let fileArr: any[] = [];
+  let isDownloaded = true;
+  let exist = false;
+  try {
+    const split = file.split('/');
+    const nameFile = split[split.length - 1];
+    const nameFileMain = !!name ? name : nameFile;
+    const _localPath = pathLocal + nameFileMain;
+    exist = await fs.exists(_localPath);
+    if (exist) {
+      filePlay = _localPath;
+    } else {
+      fileArr.push(file);
+      BackgroundTimer.setInterval(() => {
+        if (!isDownloaded || lodash.isEmpty(fileArr)) {
+          return;
+        }
+        isDownloaded = false;
+        downloadFile(fileArr.shift(), nameFileMain, () => {
+          isDownloaded = true;
+        });
+      }, 500);
+    }
+  } catch (error) {
+    console.log('Error download file', error);
+  }
+  return {filePlay, exist};
+};
+
+export const soundStop = (soundVar: any) => {
+  if (soundVar) {
+    soundVar.reset();
+    soundVar.release();
+    soundVar.stop();
+  }
+};
+
+export const sound = (file?: string, completeSound?: any, options?: any) => {
+  if (!file) {
+    return;
+  }
+  const soundVar = new Sound(file, '', (error) => {
+    if (error) {
+      console.log(`er play sound: ${file} ${JSON.stringify(error)}`);
+      return;
+    }
+    if (!!options?.loop) {
+      soundVar.setNumberOfLoops(-1);
+    }
+    if (options?.volume != undefined) {
+      if (preVolume == -1) {
+        preVolume = options?.volume;
+      }
+      soundVar.setVolume(options?.volume);
+    }
+    soundVar.play(() => {
+      soundVar.reset();
+      soundVar.release();
+      completeSound && completeSound();
+    });
+  });
+  return {
+    soundVar,
+    soundStop: () => soundStop(soundVar),
+  };
+};
+
+export const soundLocalOrUri = async (
+  file: string,
+  completeSound?: any,
+  options?: any,
+) => {
+  const filePlay: any = (await cacheFile(file)).filePlay;
+  return sound(filePlay, completeSound, options); // Lưu ý chỗ này return về promise
+};
+export const soundApi = (
+  text: string,
+  language?: string,
+  complete?: () => void,
+  completeApi?: (uri: string) => void,
+) => {
+  let cancelRequest;
+  const paramTalk = {text: text, lang: language || 'vi'};
+  const cancelToken = {
+    cancelToken: new axios.CancelToken(function executor(c) {
+      cancelRequest = c;
+    }),
+  };
+  const md5Text = md5(`${language}_${text}`);
+  cacheFile(md5Text).then(({filePlay, exist}) => {
+    if (exist) {
+      _stopSoundApi = sound(filePlay, complete)?.soundStop;
+      return;
+    }
+  });
+  axios
+    .post(pathUrl + 'talk', paramTalk, cancelToken)
+    .then((res) => {
+      if (completeApi) {
+        console.log('pathUrl + res.data.url', pathUrl + res.data.url);
+        completeApi(pathUrl + res.data.url);
+        cacheFile(pathUrl + res.data.url, md5(`${language}_${text}`));
+        return;
+      }
+      console.log('pathUrl + res.data.url', pathUrl + res.data.url);
+      _stopSoundApi = sound(pathUrl + res.data.url, complete)?.soundStop;
+      console.log('soundApi success');
+    })
+    .catch((err) => {
+      console.log('soundApi error', err);
+      complete && complete();
+    });
+  return cancelRequest;
+};
