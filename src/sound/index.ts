@@ -10,11 +10,11 @@ let preVolume: number = -1;
 let interval: any;
 let _stopSoundApi: any;
 export const stopSoundApi = () => _stopSoundApi && _stopSoundApi();
+let fileArr: any[] = [];
+let isDownloaded = true;
 const pathUrl = 'https://sanbot.dev-altamedia.com/';
 export const cacheFile = async (file: string, name?: string) => {
   let filePlay: string = file;
-  let fileArr: any[] = [];
-  let isDownloaded = true;
   let exist = false;
   try {
     const split = file.split('/');
