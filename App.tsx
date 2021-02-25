@@ -8,110 +8,55 @@
  * @format
  */
 
-import React from 'react';
-import {
-  SafeAreaView,
-  StyleSheet,
-  ScrollView,
-  View,
-  Text,
-  StatusBar,
-} from 'react-native';
-
-import {
-  Header,
-  LearnMoreLinks,
-  Colors,
-  DebugInstructions,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
+import React, {useState} from 'react';
+import {StyleSheet, Text, TouchableOpacity} from 'react-native';
+import {fromEvent, interval} from 'rxjs';
+import {switchMap} from 'rxjs/operators';
+import {cacheFile, soundApi, soundLocalOrUri} from './src';
 declare const global: {HermesInternal: null | {}};
-
 const App = () => {
+  const [uriVideo, setUriVideo] = useState<any>();
+  const sound = async () => {
+    const uriVideo = (
+      await cacheFile('https://www.youtube.com/watch?v=9kaCAbIXuyg')
+    ).filePlay;
+    setUriVideo(uriVideo);
+  };
+  const sound2 = () => {
+    soundApi('Hello alo alo alo');
+  };
+  const sound3 = () => {};
+  const sound4 = () => {
+    soundLocalOrUri(
+      'https://sanbot.dev-altamedia.com/caches/20611d62-7f6e-40b5-947c-e0b662324407.mp3',
+    );
+  };
+
+  console.log('uriVideo', uriVideo);
   return (
     <>
-      <StatusBar barStyle="dark-content" />
-      <SafeAreaView>
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          style={styles.scrollView}>
-          <Header />
-          {global.HermesInternal == null ? null : (
-            <View style={styles.engine}>
-              <Text style={styles.footer}>Engine: Hermes</Text>
-            </View>
-          )}
-          <View style={styles.body}>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Step One</Text>
-              <Text style={styles.sectionDescription}>
-                Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-                screen and then come back to see your edits.
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>See Your Changes</Text>
-              <Text style={styles.sectionDescription}>
-                <ReloadInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Debug</Text>
-              <Text style={styles.sectionDescription}>
-                <DebugInstructions />
-              </Text>
-            </View>
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Learn More</Text>
-              <Text style={styles.sectionDescription}>
-                Read the docs to discover what to do next:
-              </Text>
-            </View>
-            <LearnMoreLinks />
-          </View>
-        </ScrollView>
-      </SafeAreaView>
+      <TouchableOpacity style={styles.btnTestSound} onPress={sound}>
+        <Text>Test Sound Api</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.btnTestSound} onPress={sound2}>
+        <Text>Test Sound Api 2 </Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.btnTestSound} onPress={sound3}>
+        <Text>Test Sound Api 3 </Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.btnTestSound} onPress={sound4}>
+        <Text>Test Sound Api 4 </Text>
+      </TouchableOpacity>
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollView: {
-    backgroundColor: Colors.lighter,
-  },
-  engine: {
-    position: 'absolute',
-    right: 0,
-  },
-  body: {
-    backgroundColor: Colors.white,
-  },
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: Colors.black,
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-    color: Colors.dark,
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-  footer: {
-    color: Colors.dark,
-    fontSize: 12,
-    fontWeight: '600',
-    padding: 4,
-    paddingRight: 12,
-    textAlign: 'right',
+  btnTestSound: {
+    alignSelf: 'center',
+    backgroundColor: 'aqua',
+    marginTop: 20,
+    padding: 10,
   },
 });
 

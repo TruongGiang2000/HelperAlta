@@ -10,8 +10,25 @@ let preVolume: number = -1;
 let _stopSoundApi: any;
 export const stopSoundApi = () => _stopSoundApi && _stopSoundApi();
 let fileArr: any[] = [];
+let nameFileArr: any[] = [];
 let isDownloaded = true;
 const pathUrl = 'https://sanbot.dev-altamedia.com/';
+BackgroundTimer.setInterval(() => {
+  if (!isDownloaded || lodash.isEmpty(fileArr)) {
+    return;
+  }
+  isDownloaded = false;
+  const firstItemFile = fileArr.shift();
+  const firstItemName = nameFileArr.shift();
+  downloadFile(
+    firstItemFile,
+    firstItemName,
+    (res) => {
+      isDownloaded = true;
+    },
+    (err) => console.log('Download Err', err),
+  );
+}, 2000);
 export const cacheFile = async (file: string, name?: string) => {
   let filePlay: string = file;
   let exist = false;
@@ -24,16 +41,10 @@ export const cacheFile = async (file: string, name?: string) => {
     if (exist) {
       filePlay = _localPath;
     } else {
-      fileArr.push(file);
-      BackgroundTimer.setInterval(() => {
-        if (!isDownloaded || lodash.isEmpty(fileArr)) {
-          return;
-        }
-        isDownloaded = false;
-        downloadFile(fileArr.shift(), nameFileMain, () => {
-          isDownloaded = true;
-        });
-      }, 500);
+      if (!!file) {
+        fileArr.push(file);
+        nameFileArr.push(nameFileMain);
+      }
     }
   } catch (error) {
     console.log('Error download file', error);
@@ -101,28 +112,27 @@ export const soundApi = (
     }),
   };
   const md5Text = md5(`${language}_${text}`);
-  cacheFile(md5Text).then(({filePlay, exist}) => {
+  cacheFile('', md5Text).then(({filePlay, exist}) => {
     if (exist) {
       _stopSoundApi = sound(filePlay, complete)?.soundStop;
-      return;
+    } else {
+      axios
+        .post(pathUrl + 'talk', paramTalk, cancelToken)
+        .then((res) => {
+          cacheFile(pathUrl + res.data.url, md5(`${language}_${text}`));
+          if (completeApi) {
+            completeApi(pathUrl + res.data.url);
+            return;
+          }
+          _stopSoundApi = sound(pathUrl + res.data.url, complete)?.soundStop;
+          console.log('soundApi success');
+        })
+        .catch((err) => {
+          console.log('soundApi error', err);
+          complete && complete();
+        });
     }
   });
-  axios
-    .post(pathUrl + 'talk', paramTalk, cancelToken)
-    .then((res) => {
-      if (completeApi) {
-        console.log('pathUrl + res.data.url', pathUrl + res.data.url);
-        completeApi(pathUrl + res.data.url);
-        cacheFile(pathUrl + res.data.url, md5(`${language}_${text}`));
-        return;
-      }
-      console.log('pathUrl + res.data.url', pathUrl + res.data.url);
-      _stopSoundApi = sound(pathUrl + res.data.url, complete)?.soundStop;
-      console.log('soundApi success');
-    })
-    .catch((err) => {
-      console.log('soundApi error', err);
-      complete && complete();
-    });
+
   return cancelRequest;
 };
